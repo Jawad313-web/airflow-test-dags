@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: airflow-postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - airflow-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  airflow:
+    build: .
+    image: airflow-3.1.5-git:latest
+    container_name: airflow-3.1.5
+    
+    environment:
+      AIRFLOW_HOME: /opt/airflow
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: 'Wb4ZuyJoM4TzZ6F2QQ8z8-XLPRc71Lr_2yL5Pwp2bKo='
+      AIRFLOW_CORE_DAGS_ARE_PAUSED_AT_CREATION: 'false'
+      AIRFLOW_CORE_PLUGINS_FOLDER: /opt/airflow/plugins
+      AIRFLOW__CORE__MIN_FILE_PROCESS_INTERVAL: '10'
+      AIRFLOW__CORE__DAG_FILE_PROCESSOR_TIMEOUT: '30'
+      AIRFLOW__GIT_PROVIDER__GIT_DEFAULT_CONN_ID: 'github_repo'
+      
+    ports:
+      - "8080:8080"
+    
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./config:/opt/airflow/config
+      - airflow-home:/opt/airflow
+    
+    networks:
+      - airflow-network
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    restart: unless-stopped
+    
+    command: >
+      bash -c "
+      airflow db migrate &&
+      airflow standalone
+      "
+
+networks:
+  airflow-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  airflow-home:
