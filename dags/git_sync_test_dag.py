@@ -19,7 +19,7 @@ dag = DAG(
     'git_sync_test_dag',
     default_args=default_args,
     description='Test DAG for Git syncing behavior',
-    schedule_interval='* * * * *',  # Run every minute
+    schedule='* * * * *',  # Run every minute
     start_date=datetime(2025, 12, 15),
     catchup=False,
     tags=['test', 'git-sync'],

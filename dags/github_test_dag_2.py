@@ -14,7 +14,7 @@ dag = DAG(
     'github_test_dag_2',
     default_args=default_args,
     description='Test DAG 2 from GitHub with hourly schedule',
-    schedule_interval='@hourly',
+    schedule='@hourly',
     start_date=datetime(2025, 12, 15),
     catchup=False,
     tags=['github-test'],
