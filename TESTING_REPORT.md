@@ -251,21 +251,38 @@ min_file_process_interval = 300  # 5 minutes
 
 ---
 
-### Priority 2: Implement Git Change Detection ✅ HIGH
-**Problem:** All DAGs reparsed even when Git hasn't changed  
-**Solution:** Use Airflow's built-in Git change detection
+### Priority 2: Implement File Modification Timestamp Tracking ✅ HIGH
+**Problem:** All DAGs reparsed even when synced files haven't changed  
+**Architecture:** Separate Git Repo → Sync Mechanism → Production Dags Folder
 
-**Implementation:**
+**Solution:** Enable file modification timestamp-based change detection
+
+**Implementation - airflow.cfg:**
+```ini
+[core]
+# Enable file stat caching to detect actual file changes
+dag_file_stat_cache_ttl = 300  # Cache file stats for 5 minutes
+
+# Only reparse DAGs whose modification time has changed
+parse_sync_to_db = True
+
+# Enable lightweight hashing for file change detection  
+store_dag_code = True
+```
+
+**Implementation - DAG level (already added):**
 ```python
-# DAG decorator can include git_sync configuration
-@dag(
-    dag_id='my_dag',
-    schedule='@daily',
-    git_sync=True,
-    git_repo='https://github.com/Jawad313-web/airflow-test-dags.git',
-    git_sync_interval=300,  # 5 minutes
+dag = DAG(
+    'my_dag',
+    render_template_as_native_obj=True,  # Enables proper serialization
 )
 ```
+
+**How it works:**
+1. Sync mechanism copies files from Git Repo → Dags Folder
+2. If file mtime (modification time) hasn't changed → Skip reparsing
+3. Only files with new mtime get reparsed
+4. Dramatically reduces unnecessary processing
 
 **Expected Benefit:** 80-90% reduction in unnecessary reprocessing
 
