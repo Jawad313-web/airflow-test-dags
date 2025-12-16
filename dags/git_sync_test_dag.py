@@ -23,6 +23,8 @@ dag = DAG(
     start_date=datetime(2025, 12, 15),
     catchup=False,
     tags=['test', 'git-sync'],
+    # Priority 2: Git change detection - enable template rendering for hash tracking
+    render_template_as_native_obj=True,
 )
 
 def sync_from_github():
